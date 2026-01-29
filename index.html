@@ -60,13 +60,6 @@
       line-height: 1.45;
     }
 
-    .row-hit td{ background: var(--hitRow); }
-    td.highlight{
-      background: #fff2b3;
-      font-weight: 800;
-      box-shadow: inset 0 0 0 2px #f6d55c;
-    }
-
     .controls{
       display:flex;
       flex-wrap:wrap;
@@ -204,6 +197,7 @@
       background: rgba(17,24,39,.02);
     }
 
+
     /* ✅ 日期欄仍然 sticky（好用） */
     tbody td:first-child, thead th:first-child{
       position: sticky;
@@ -266,6 +260,25 @@
       color:#fff;
       border-color: transparent;
       box-shadow: 0 12px 22px rgba(37,99,235,.22);
+    }
+
+    .row-hit td{ background: var(--hitRow); }
+    td.highlight{
+      background: #fff2b3;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 2px #f6d55c;
+    }
+    /* 讓 highlight 背景永遠贏過斑馬紋 / hover / row-hit */
+    tbody td.highlight{
+      background: var(--hitCell) !important;
+    }
+
+    /* row-hit 只影響沒有 highlight 的格子 */
+    tbody tr.row-hit td{
+      background: var(--hitRow);
+    }
+    tbody tr.row-hit td.highlight{
+      background: var(--hitCell) !important;
     }
   </style>
 </head>
