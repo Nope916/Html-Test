@@ -6,76 +6,304 @@
   <title>教會事奉表</title>
 
   <style>
-    .row-hit td { background: #E8F2FF; }
-    td.highlight { background: #eed85a; font-weight:600; }
+    :root{
+      --bg:#ffffff;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --line2:#eef2f7;
+      --brand:#2563eb;
+      --brand2:#1d4ed8;
+
+      --hitRow: rgba(37,99,235,.07);
+      --hitCell: #fff2b3;
+      --hitCellBorder: #f6d55c;
+
+      --shadow: 0 10px 30px rgba(17,24,39,.08);
+      --radius: 14px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC",
+                   "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
+      color:var(--text);
+      background: radial-gradient(1000px 400px at 10% 0%, rgba(37,99,235,.12), transparent 60%),
+                  radial-gradient(900px 420px at 90% 10%, rgba(29,78,216,.10), transparent 60%),
+                  var(--bg);
+    }
+
+    .container{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .titlebar{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin: 4px 0 12px;
+    }
+    .titlebar h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:.2px;
+    }
+    .titlebar .sub{
+      margin:2px 0 0;
+      color:var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .row-hit td{ background: var(--hitRow); }
+    td.highlight{
+      background: #fff2b3;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 2px #f6d55c;
+    }
 
     .controls{
       display:flex;
       flex-wrap:wrap;
-      align-items:center;
+      align-items:flex-end;
       gap:10px;
-      margin-bottom:12px;
-      padding:10px;
-      background:#fff;
-      position:sticky;
-      top:0;
-      z-index:20;
-      border-bottom:1px solid #eee;
-    }
-    .controls select,
-    .controls input,
-    .controls button{
-      font-size:16px;
-      padding:10px 12px;
+      padding:12px;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
 
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 220px;
+    }
+    .field label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    select, input{
+      width:100%;
+      appearance:none;
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 15px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      box-shadow: 0 1px 0 rgba(17,24,39,.02);
+    }
+    input::placeholder{ color:#9ca3af; }
+    select:focus, input:focus{
+      border-color: rgba(37,99,235,.45);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.15);
+    }
+
+    .btns{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    button{
+      border:1px solid var(--line);
+      background:#fff;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 15px;
+      cursor:pointer;
+      transition: transform .05s ease, box-shadow .2s ease, border-color .2s ease;
+      box-shadow: 0 6px 14px rgba(17,24,39,.05);
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active{ transform: translateY(1px); }
+
+    #exportIcsBtn{
+      background: linear-gradient(180deg, var(--brand), var(--brand2));
+      color:#fff;
+      border-color: transparent;
+      box-shadow: 0 12px 22px rgba(37,99,235,.25);
+    }
+
+    .stats{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin-left:auto;
+    }
+    .pill{
+      font-size: 13px;
+      background:#fff;
+      border:1px solid var(--line);
+      padding: 8px 10px;
+      border-radius: 999px;
+      box-shadow: 0 6px 14px rgba(17,24,39,.04);
+      white-space: nowrap;
+    }
+    .pill strong{ font-weight: 900; }
+
     .table-wrap{
+      margin-top: 12px;
       overflow-x:auto;
+      overflow-y: visible;
       -webkit-overflow-scrolling:touch;
-      border:1px solid #eee;
-      border-radius:10px;
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
     }
+
     table{
-      border-collapse:collapse;
-      width:max-content;
-      min-width:100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      width: max-content;
+      min-width: 100%;
+      font-size: 14px;
     }
-    th, td{
-      border:1px solid #ddd;
-      padding:10px 12px;
-      white-space:nowrap;
-      text-align:left;
-    }
+
+    /* ✅ 重點：表頭不要 sticky，避免「被往下推」壓到 1-11 */
     thead th{
-      background:#f6f6f6;
+      position: static;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      color:#0f172a;
+      text-align:left;
+      border-bottom:1px solid var(--line);
+      padding: 12px 12px;
+      white-space: nowrap;
+      z-index: 1;
+    }
+
+    th, td{
+      border-bottom:1px solid var(--line2);
+      padding: 12px 12px;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) td{
+      background: rgba(248,250,252,.65);
+    }
+    tbody tr:hover td{
+      background: rgba(17,24,39,.02);
+    }
+
+    /* ✅ 日期欄仍然 sticky（好用） */
+    tbody td:first-child, thead th:first-child{
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: #fff;
+      border-right: 1px solid var(--line);
+      font-weight: 800;
+    }
+    tbody tr:nth-child(even) td:first-child{
+      background: #fff;
+    }
+
+    @media (max-width: 640px){
+      .field{ min-width: 160px; }
+      .titlebar{ flex-direction:column; align-items:flex-start; }
+    }
+
+    .modal-overlay{
+      position:fixed;
+      inset:0;
+      background: rgba(15,23,42,.45);
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .modal{
+      background: rgba(255,255,255,.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      max-width: 460px;
+      width: 100%;
+      max-height: 75vh;
+      overflow: auto;
+      box-shadow: var(--shadow);
+      padding: 12px;
+    }
+    .modal h3{
+      margin: 6px 8px 4px;
+      font-size: 16px;
+    }
+    .modal p{
+      margin: 0 8px 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .modal .modal-btn{
+      width:100%;
+      padding: 10px 12px;
+      margin: 6px 0;
+      border-radius: 12px;
+    }
+    .modal .primary{
+      background: linear-gradient(180deg, var(--brand), var(--brand2));
+      color:#fff;
+      border-color: transparent;
+      box-shadow: 0 12px 22px rgba(37,99,235,.22);
     }
   </style>
 </head>
 
 <body>
+  <div class="container">
+    <div class="titlebar">
+      <div>
+        <h1>教會事奉表</h1>
+        <div class="sub">選人或輸入任一字即可高亮；也可匯出到行事曆（ICS）</div>
+      </div>
+    </div>
 
-  <div class="controls">
-    <label>
-      選擇同工：
-      <select id="personSelect">
-        <option value="">（請選擇）</option>
-      </select>
-    </label>
+    <div class="controls">
+      <div class="field">
+        <label for="personSelect">選擇同工</label>
+        <select id="personSelect">
+          <option value="">（請選擇）</option>
+        </select>
+      </div>
 
-    <label>
-      搜尋：
-      <input id="personFilter" type="text" placeholder="輸入任一字…" autocomplete="off">
-    </label>
+      <div class="field">
+        <label for="personFilter">搜尋</label>
+        <input id="personFilter" type="text" placeholder="輸入任一字…" autocomplete="off">
+      </div>
 
-    <button id="clearBtn" type="button">清除</button>
-    <button id="exportIcsBtn" type="button">加入到日曆</button>
+      <div class="btns">
+        <button id="clearBtn" type="button">清除</button>
+        <button id="exportIcsBtn" type="button">加入到日曆</button>
+      </div>
 
-    <span id="occCount">出現次數：0</span>
-    <span id="dayCount">有幾天：0</span>
-    <span id="hitPeople" style="margin-left:8px;">命中人數：0</span>
-  </div>
+      <div class="stats">
+        <span id="occCount" class="pill">出現次數：<strong>0</strong></span>
+        <span id="dayCount" class="pill">有幾天：<strong>0</strong></span>
+        <span id="hitPeople" class="pill">人數：<strong>0</strong></span>
+      </div>
+    </div>
 
- 
   <div class="table-wrap">
     <table id="roster">
       <thead>
@@ -310,7 +538,6 @@
     </table>
   </div>
 
-
 <script>
 const table = document.getElementById("roster");
 const select = document.getElementById("personSelect");
@@ -370,9 +597,9 @@ function cellHasName(text, name){
 function clearHighlight(){
   table.querySelectorAll(".highlight").forEach(td=>td.classList.remove("highlight"));
   table.querySelectorAll("tbody tr").forEach(tr=>tr.classList.remove("row-hit"));
-  occCount.textContent = "出現次數：0";
-  dayCount.textContent = "有幾天：0";
-  hitPeople.textContent = "命中人數：0";
+  occCount.querySelector("strong").textContent = "0";
+  dayCount.querySelector("strong").textContent = "0";
+  hitPeople.querySelector("strong").textContent = "0";
 }
 
 function getHeaders(){
@@ -400,8 +627,8 @@ function buildNameList(){
         continue;
       }
 
-      const t = norm(text);
-      if(t.includes("暫停") || t.includes("春節主日")){
+      const tt = norm(text);
+      if(tt.includes("暫停") || tt.includes("春節主日")){
         col += span;
         continue;
       }
@@ -472,9 +699,9 @@ function applyHighlightMany(names){
     }
   });
 
-  occCount.textContent = `出現次數：${occ}`;
-  dayCount.textContent = `有幾天：${days.size}`;
-  hitPeople.textContent = `命中人數：${list.length}`;
+  occCount.querySelector("strong").textContent = String(occ);
+  dayCount.querySelector("strong").textContent = String(days.size);
+  hitPeople.querySelector("strong").textContent = String(list.length);
 }
 
 filterInput.addEventListener("input", () => {
@@ -487,7 +714,6 @@ filterInput.addEventListener("input", () => {
   }
 
   const matches = allNames.filter(n => n.toLowerCase().includes(q));
-
   select.value = "";
   applyHighlightMany(matches);
 });
@@ -632,85 +858,49 @@ function resolvePeopleForExport(){
   if(exact) return [exact];
 
   const qLower = q.toLowerCase();
-  const matches = allNames.filter(n => n.toLowerCase().includes(qLower));
-  return matches;
+  return allNames.filter(n => n.toLowerCase().includes(qLower));
 }
 
 function pickOneFromList(list){
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
-    overlay.style.position = "fixed";
-    overlay.style.inset = "0";
-    overlay.style.background = "rgba(0,0,0,.35)";
-    overlay.style.zIndex = "9999";
-    overlay.style.display = "flex";
-    overlay.style.alignItems = "center";
-    overlay.style.justifyContent = "center";
-    overlay.style.padding = "16px";
+    overlay.className = "modal-overlay";
 
     const box = document.createElement("div");
-    box.style.background = "#fff";
-    box.style.borderRadius = "12px";
-    box.style.maxWidth = "420px";
-    box.style.width = "100%";
-    box.style.maxHeight = "70vh";
-    box.style.overflow = "auto";
-    box.style.boxShadow = "0 10px 30px rgba(0,0,0,.2)";
-    box.style.padding = "12px";
+    box.className = "modal";
 
-    const title = document.createElement("div");
+    const title = document.createElement("h3");
     title.textContent = "選擇要匯出的同工";
-    title.style.fontSize = "16px";
-    title.style.fontWeight = "700";
-    title.style.padding = "8px 8px 12px 8px";
 
-    const tip = document.createElement("div");
+    const tip = document.createElement("p");
     tip.textContent = `目前搜尋命中 ${list.length} 人，請點選其中一位：`;
-    tip.style.fontSize = "14px";
-    tip.style.color = "#444";
-    tip.style.padding = "0 8px 10px 8px";
 
     const btnAll = document.createElement("button");
     btnAll.type = "button";
     btnAll.textContent = "匯出全部命中";
-    btnAll.style.width = "100%";
-    btnAll.style.padding = "10px 12px";
-    btnAll.style.margin = "0 0 10px 0";
-    btnAll.style.fontSize = "16px";
+    btnAll.className = "modal-btn primary";
 
     const listWrap = document.createElement("div");
 
     const cancel = document.createElement("button");
     cancel.type = "button";
     cancel.textContent = "取消";
-    cancel.style.width = "100%";
-    cancel.style.padding = "10px 12px";
-    cancel.style.marginTop = "10px";
-    cancel.style.fontSize = "16px";
+    cancel.className = "modal-btn";
 
-    btnAll.addEventListener("click", () => {
-      overlay.remove();
-      resolve(list);
-    });
-
-    cancel.addEventListener("click", () => {
-      overlay.remove();
-      resolve(null);
-    });
+    btnAll.addEventListener("click", () => { overlay.remove(); resolve(list); });
+    cancel.addEventListener("click", () => { overlay.remove(); resolve(null); });
 
     list.forEach(name => {
       const b = document.createElement("button");
       b.type = "button";
       b.textContent = name;
-      b.style.width = "100%";
-      b.style.padding = "10px 12px";
-      b.style.margin = "6px 0";
-      b.style.fontSize = "16px";
-      b.addEventListener("click", () => {
-        overlay.remove();
-        resolve([name]);
-      });
+      b.className = "modal-btn";
+      b.addEventListener("click", () => { overlay.remove(); resolve([name]); });
       listWrap.appendChild(b);
+    });
+
+    overlay.addEventListener("click", (e) => {
+      if(e.target === overlay){ overlay.remove(); resolve(null); }
     });
 
     box.appendChild(title);
@@ -786,8 +976,7 @@ exportIcsBtn.addEventListener("click", async () => {
   });
 
   mergedLines.push("END:VCALENDAR");
-  const merged = mergedLines.join("\r\n");
-  downloadText(`教會事奉表-搜尋命中${candidates.length}人.ics`, merged);
+  downloadText(`教會事奉表-搜尋命中${candidates.length}人.ics`, mergedLines.join("\r\n"));
 });
 </script>
 
