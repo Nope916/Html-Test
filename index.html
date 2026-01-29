@@ -68,14 +68,13 @@
     </label>
 
     <button id="clearBtn" type="button">清除</button>
-    <button id="exportIcsBtn" type="button">匯出 ICS</button>
+    <button id="exportIcsBtn" type="button">加入到日曆</button>
 
     <span id="occCount">出現次數：0</span>
     <span id="dayCount">有幾天：0</span>
     <span id="hitPeople" style="margin-left:8px;">命中人數：0</span>
   </div>
 
-  <div class="table-wrap">
  
   <div class="table-wrap">
     <table id="roster">
@@ -591,8 +590,8 @@ function buildIcs(personName, events){
   lines.push("METHOD:PUBLISH");
 
   events.forEach(ev=>{
-    const dtstart = toIcsDateTimeLocal(ev.date, 9, 0);
-    const dtend   = toIcsDateTimeLocal(ev.date, 10, 0);
+    const dtstart = toIcsDateTimeLocal(ev.date, 10, 30);
+    const dtend   = toIcsDateTimeLocal(ev.date, 12, 0);
     const summary = `教會事奉：${ev.roles.join("／")}`;
     const desc    = `同工：${personName}\n日期：${ev.date}\n服事：${ev.roles.join("、")}`;
 
@@ -622,22 +621,173 @@ function downloadText(filename, text){
   URL.revokeObjectURL(url);
 }
 
-exportIcsBtn.addEventListener("click", () => {
-  const person = norm(select.value);
-  if(!person){
-    alert("請先用「選擇同工」選一個人，再匯出 ICS。");
+function resolvePeopleForExport(){
+  const fromSelect = norm(select.value);
+  if(fromSelect) return [fromSelect];
+
+  const q = norm(filterInput.value);
+  if(!q) return [];
+
+  const exact = allNames.find(n => norm(n) === q);
+  if(exact) return [exact];
+
+  const qLower = q.toLowerCase();
+  const matches = allNames.filter(n => n.toLowerCase().includes(qLower));
+  return matches;
+}
+
+function pickOneFromList(list){
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    overlay.style.inset = "0";
+    overlay.style.background = "rgba(0,0,0,.35)";
+    overlay.style.zIndex = "9999";
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.padding = "16px";
+
+    const box = document.createElement("div");
+    box.style.background = "#fff";
+    box.style.borderRadius = "12px";
+    box.style.maxWidth = "420px";
+    box.style.width = "100%";
+    box.style.maxHeight = "70vh";
+    box.style.overflow = "auto";
+    box.style.boxShadow = "0 10px 30px rgba(0,0,0,.2)";
+    box.style.padding = "12px";
+
+    const title = document.createElement("div");
+    title.textContent = "選擇要匯出的同工";
+    title.style.fontSize = "16px";
+    title.style.fontWeight = "700";
+    title.style.padding = "8px 8px 12px 8px";
+
+    const tip = document.createElement("div");
+    tip.textContent = `目前搜尋命中 ${list.length} 人，請點選其中一位：`;
+    tip.style.fontSize = "14px";
+    tip.style.color = "#444";
+    tip.style.padding = "0 8px 10px 8px";
+
+    const btnAll = document.createElement("button");
+    btnAll.type = "button";
+    btnAll.textContent = "匯出全部命中";
+    btnAll.style.width = "100%";
+    btnAll.style.padding = "10px 12px";
+    btnAll.style.margin = "0 0 10px 0";
+    btnAll.style.fontSize = "16px";
+
+    const listWrap = document.createElement("div");
+
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "取消";
+    cancel.style.width = "100%";
+    cancel.style.padding = "10px 12px";
+    cancel.style.marginTop = "10px";
+    cancel.style.fontSize = "16px";
+
+    btnAll.addEventListener("click", () => {
+      overlay.remove();
+      resolve(list);
+    });
+
+    cancel.addEventListener("click", () => {
+      overlay.remove();
+      resolve(null);
+    });
+
+    list.forEach(name => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = name;
+      b.style.width = "100%";
+      b.style.padding = "10px 12px";
+      b.style.margin = "6px 0";
+      b.style.fontSize = "16px";
+      b.addEventListener("click", () => {
+        overlay.remove();
+        resolve([name]);
+      });
+      listWrap.appendChild(b);
+    });
+
+    box.appendChild(title);
+    box.appendChild(tip);
+    box.appendChild(btnAll);
+    box.appendChild(listWrap);
+    box.appendChild(cancel);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  });
+}
+
+exportIcsBtn.addEventListener("click", async () => {
+  let candidates = resolvePeopleForExport();
+
+  if(!candidates.length){
+    alert("請在搜尋框輸入同工名字（可輸入一個字也行），再按匯出 ICS。");
     return;
   }
 
-  const events = buildEventsForPerson(person);
-  if(!events.length){
-    alert("這位同工在表格中沒有找到服事紀錄。");
+  if(candidates.length > 1){
+    const picked = await pickOneFromList(candidates);
+    if(!picked) return;
+    candidates = picked;
+  }
+
+  if(candidates.length === 1){
+    const person = candidates[0];
+    const events = buildEventsForPerson(person);
+    if(!events.length){
+      alert("這位同工在表格中沒有找到服事紀錄。");
+      return;
+    }
+    const ics = buildIcs(person, events);
+    const safeName = person.replace(/[\\/:*?"<>|]/g,"_");
+    downloadText(`教會事奉表-${safeName}.ics`, ics);
     return;
   }
 
-  const ics = buildIcs(person, events);
-  const safeName = person.replace(/[\\/:*?"<>|]/g,"_");
-  downloadText(`教會事奉表-${safeName}.ics`, ics);
+  const mergedLines = [];
+  mergedLines.push("BEGIN:VCALENDAR");
+  mergedLines.push("VERSION:2.0");
+  mergedLines.push("PRODID:-//Church Roster//ICS Export//ZH");
+  mergedLines.push("CALSCALE:GREGORIAN");
+  mergedLines.push("METHOD:PUBLISH");
+
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const mo = pad2(now.getUTCMonth()+1);
+  const da = pad2(now.getUTCDate());
+  const H = pad2(now.getUTCHours());
+  const M = pad2(now.getUTCMinutes());
+  const S = pad2(now.getUTCSeconds());
+  const dtstamp = `${y}${mo}${da}T${H}${M}${S}Z`;
+
+  candidates.forEach(person => {
+    const events = buildEventsForPerson(person);
+    events.forEach(ev => {
+      const dtstart = toIcsDateTimeLocal(ev.date, 10, 30);
+      const dtend   = toIcsDateTimeLocal(ev.date, 12, 0);
+      const summary = `教會事奉：${person}（${ev.roles.join("／")}）`;
+      const desc    = `同工：${person}\n日期：${ev.date}\n服事：${ev.roles.join("、")}`;
+
+      mergedLines.push("BEGIN:VEVENT");
+      mergedLines.push(`UID:${uid()}`);
+      mergedLines.push(`DTSTAMP:${dtstamp}`);
+      mergedLines.push(`DTSTART:${dtstart}`);
+      mergedLines.push(`DTEND:${dtend}`);
+      mergedLines.push(`SUMMARY:${icsEscape(summary)}`);
+      mergedLines.push(`DESCRIPTION:${icsEscape(desc)}`);
+      mergedLines.push("END:VEVENT");
+    });
+  });
+
+  mergedLines.push("END:VCALENDAR");
+  const merged = mergedLines.join("\r\n");
+  downloadText(`教會事奉表-搜尋命中${candidates.length}人.ics`, merged);
 });
 </script>
 
